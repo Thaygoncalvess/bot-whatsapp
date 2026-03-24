@@ -1,11 +1,15 @@
+process.env.PUPPETEER_SKIP_CHROMIUM_DOWNLOAD = "true";
+
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
 const cron = require('node-cron');
 
-// ================== CONFIG DO BOT ==================
+// ================== CLIENT ==================
 const client = new Client({
   authStrategy: new LocalAuth(),
   puppeteer: {
+    headless: true,
+    executablePath: '/usr/bin/chromium-browser',
     args: [
       '--no-sandbox',
       '--disable-setuid-sandbox',
@@ -14,20 +18,20 @@ const client = new Client({
       '--no-first-run',
       '--no-zygote',
       '--single-process',
-      '--disable-gpu'
+      '--disable-gpu',
+      '--disable-features=site-per-process'
     ]
   }
 });
 
-// ================== QR CODE ==================
+// ================== QR ==================
 client.on('qr', qr => {
   qrcode.generate(qr, { small: true });
 });
 
-// ================== BOT PRONTO ==================
+// ================== READY ==================
 client.on('ready', () => {
   console.log('Bot pronto! 🚀');
-
   iniciarAgendamentos();
 });
 
@@ -38,21 +42,21 @@ const grupos = [
   {
     nome: "teste 5",
     id: "120363426340804676@g.us",
-    dia: 1, // segunda
+    dia: 1,
     hora: 19,
     minuto: 0
   },
   {
     nome: "teste 4",
     id: "120363423649429742@g.us",
-    dia: 2, // terça
+    dia: 2,
     hora: 18,
     minuto: 0
   },
   {
     nome: "teste 3",
     id: "120363424328830430@g.us",
-    dia: 5, // sexta
+    dia: 5,
     hora: 10,
     minuto: 0
   },
@@ -66,47 +70,47 @@ const grupos = [
   {
     nome: "turma 1 teste",
     id: "120363427708398129@g.us",
-    dia: 4, // quinta
+    dia: 4,
     hora: 19,
     minuto: 0
   }
 ];
 
-// ================== FUNÇÃO DE AGENDAMENTO ==================
+// ================== AGENDAMENTO ==================
 function iniciarAgendamentos() {
   grupos.forEach(grupo => {
 
-    // 🔔 MENSAGEM 09:00 NO DIA DA AULA
+    // 🌞 09:00 no dia da aula
     cron.schedule(`0 9 * * ${grupo.dia}`, async () => {
-      console.log(`Mensagem manhã para ${grupo.nome}`);
+      console.log(`Manhã: ${grupo.nome}`);
 
       await client.sendMessage(grupo.id,
 `🌞 Bom dia pessoal!
 
 📚 Hoje temos aula às ${grupo.hora}:${String(grupo.minuto).padStart(2, '0')} (horário de Brasília).
 
-✨ Conto com a presença de todos!
+✨ Conto com todos vocês!
 🤗🤗🤗`);
     });
 
-    // ⏰ 15 MIN ANTES DA AULA
+    // ⏰ 15 min antes
     let hora = grupo.hora;
     let minuto = grupo.minuto - 15;
 
     if (minuto < 0) {
-      minuto = 60 + minuto;
-      hora = hora - 1;
+      minuto += 60;
+      hora -= 1;
     }
 
     cron.schedule(`${minuto} ${hora} * * ${grupo.dia}`, async () => {
-      console.log(`Lembrete 15min para ${grupo.nome}`);
+      console.log(`15min: ${grupo.nome}`);
 
       await client.sendMessage(grupo.id,
-`⏰ Atenção pessoal!
+`⏰ Atenção!
 
 Faltam 15 minutos para nossa aula!
 
-📚 Nos vemos já já às ${grupo.hora}:${String(grupo.minuto).padStart(2, '0')} 😄`);
+📚 Nos vemos às ${grupo.hora}:${String(grupo.minuto).padStart(2, '0')} 😄`);
     });
 
   });
